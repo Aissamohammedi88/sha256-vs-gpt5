@@ -1,0 +1,9 @@
+import hashlib
+
+def token_omega(user, context, timestamp):
+    return hashlib.sha256(
+        f"{user}{context}{timestamp}".encode()
+    ).hexdigest()[:16]
+
+print(token_omega("Aissa", "creation_token", 1730000000.123456))
+# → a3f8c9d1e2b4f6a7
