@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ═══════════════════════════════════════════════════════════════════════════════
+# NEXUS OMEGA — SWARM INTELLIGENCE ENGINE
+# Architecture de résonance cognitive : 20 Agents Génies en parallèle.
+# Auteur  : Aissa Mohammedi (DGK)
+# Version : 3.0.0
+# Licence : NEXUS-OPEN-3.0
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import hashlib
+import json
+import time
+import threading
+import random
+import uuid
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# ───────────────────────────────────────────────────────────────────────────────
+# COUCHE 1 : LES PROFILS COGNITIFS (LES 20 GÉNIES)
+# ───────────────────────────────────────────────────────────────────────────────
+
+class GeniusProfile:
+    """Représente la signature cognitive d'un génie."""
+    def __init__(self, name, domain, cognitive_bias, strategy):
+        self.name = name
+        self.domain = domain
+        self.cognitive_bias = cognitive_bias  # Ex: "Abstraction pure", "Pragmatique"
+        self.strategy = strategy              # Ex: "Déduction", "Analogie", "Brute force"
+
+GENIUS_SWARM = [
+    GeniusProfile("Einstein", "Physique", "Abstraction pure", "Visualisation des paradoxes"),
+    GeniusProfile("Turing", "Informatique", "Logique mathématique", "Décomposition algorithmique"),
+    GeniusProfile("Von_Neumann", "Mathématiques", "Architecture systémique", "Optimisation formelle"),
+    GeniusProfile("Shannon", "Théorie de l'info", "Réduction du bruit", "Modélisation des probabilités"),
+    GeniusProfile("Gauss", "Mathématiques", "Rigueur absolue", "Élimination des variables"),
+    GeniusProfile("Euler", "Mathématiques", "Élégance structurelle", "Résolution par graphes"),
+    GeniusProfile("Ramanujan", "Mathématiques", "Intuition radicale", "Sauts conceptuels non-linéaires"),
+    GeniusProfile("Newton", "Physique/Maths", "Réductionnisme", "Lois fondamentales"),
+    GeniusProfile("Da_Vinci", "Polyvalent", "Pensée visuelle", "Analogies inter-domaines"),
+    GeniusProfile("Tesla", "Ingénierie", "Vision 3D", "Simulation mentale"),
+    GeniusProfile("Feynman", "Physique", "Clarté absolue", "Explication simplifiée"),
+    GeniusProfile("Hawking", "Cosmologie", "Vision macroscopique", "Théorie unifiée"),
+    GeniusProfile("Curie", "Chimie/Physique", "Persévérance", "Isolation des variables"),
+    GeniusProfile("Darwin", "Biologie", "Pensée évolutive", "Sélection naturelle"),
+    GeniusProfile("Aristote", "Philosophie", "Taxonomie", "Catégorisation logique"),
+    GeniusProfile("Kant", "Philosophie", "Critique transcendantale", "Analyse des limites"),
+    GeniusProfile("Sun_Tzu", "Stratégie", "Asymétrie", "Exploitation des faiblesses"),
+    GeniusProfile("Machiavel", "Politique", "Pragmatisme noir", "Anticipation des réactions"),
+    GeniusProfile("Lovelace", "Informatique", "Poésie algorithmique", "Créativité logique"),
+    GeniusProfile("Hopper", "Informatique", "Action directe", "Résolution pragmatique")
+]
+
+# ───────────────────────────────────────────────────────────────────────────────
+# COUCHE 2 : LE MOTEUR D'ESSAIM (SWARM ENGINE)
+# ───────────────────────────────────────────────────────────────────────────────
+
+class SwarmGeniusOmega:
+    def __init__(self):
+        self.memory = []
+        self.active_tokens = {}
+        self.lock = threading.Lock()
+
+    def _generate_hash(self, content):
+        """Génère un hash de vérification pour chaque pensée."""
+        return hashlib.sha256(content.encode()).hexdigest()[:16]
+
+    def _think(self, genius, prompt):
+        """
+        Simule la réflexion d'un génie sur le prompt.
+        Dans une vraie implémentation, cela appellerait une API LLM (GPT-4, Claude).
+        Ici, on génère une pensée structurée basée sur le profil.
+        """
+        time.sleep(random.uniform(0.1, 0.4))  # Simulation du temps de calcul
+        
+        thought = (
+            f"[{genius.name} | {genius.domain}]\n"
+            f"Stratégie: {genius.strategy}\n"
+            f"Analyse: En appliquant {genius.cognitive_bias}, je vois que le prompt "
+            f"'{prompt}' nécessite une approche basée sur {genius.strategy.lower()}.\n"
+            f"Conclusion partielle: {uuid.uuid4().hex[:8]} (Séquence logique validée)."
+        )
+        return {"genius": genius.name, "thought": thought, "confidence": random.uniform(0.7, 0.99)}
+
+    def _synthesize(self, results, prompt):
+        """
+        Le Consensus : Fusionne les pensées des 20 génies pour créer une méta-réponse.
+        """
+        # Trier par confiance
+        sorted_results = sorted(results, key=lambda x: x['confidence'], reverse=True)
+        top_geniuses = sorted_results[:5] # On garde le top 5 pour la synthèse finale
+        
+        synthesis = (
+            f"═══ RÉSONANCE COGNITIVE OMEGA ═══\n"
+            f"Prompt initial : {prompt}\n\n"
+            f"Après délibération de {len(results)} agents cognitifs, voici la synthèse :\n\n"
+        )
+        
+        for i, res in enumerate(top_geniuses, 1):
+            synthesis += f"{i}. Contribution de {res['genius']} (Confiance: {res['confidence']*100:.1f}%)\n"
+        
+        synthesis += (
+            f"\n→ Méta-Conclusion : La solution optimale émerge de la fusion "
+            f"des perspectives de {top_geniuses[0]['genius']} et {top_geniuses[1]['genius']}.\n"
+        )
+        
+        return synthesis
+
+    def execute_resonance(self, utilisateur, contexte, prompt):
+        """
+        Processus principal : Génère un token, lance l'essaim, scelle le résultat.
+        """
+        start_time = time.time()
+        
+        # 1. Génération du Token
+        raw_token = f"{utilisateur}{contexte}{time.time()}"
+        token_hash = self._generate_hash(raw_token)
+        
+        with self.lock:
+            self.active_tokens[token_hash] = utilisateur
+            self.memory.append({
+                "type": "token_creation",
+                "hash": token_hash,
+                "timestamp": datetime.now().isoformat()
+            })
+
+        print(f"🔑 Token de résonance généré : {token_hash}")
+        print(f"🧠 Déploiement de l'essaim ({len(GENIUS_SWARM)} génies) pour le prompt : '{prompt}'...\n")
+
+        # 2. Exécution parallèle de l'essaim
+        results = []
+        with ThreadPoolExecutor(max_workers=len(GENIUS_SWARM)) as executor:
+            futures = {executor.submit(self._think, g, prompt): g for g in GENIUS_SWARM}
+            
+            for future in as_completed(futures):
+                res = future.result()
+                results.append(res)
+                # Affichage en temps réel
+                print(f"  [{res['genius']}] a fini de réfléchir. (Confiance: {res['confidence']*100:.1f}%)")
+
+        # 3. Synthèse
+        final_synthesis = self._synthesize(results, prompt)
+        
+        # 4. Scellement cryptographique
+        synthesis_hash = self._generate_hash(final_synthesis)
+        
+        # 5. Sauvegarde mémoire
+        with self.lock:
+            self.memory.append({
+                "type": "resonance_result",
+                "token": token_hash,
+                "prompt": prompt,
+                "synthesis_hash": synthesis_hash,
+                "timestamp": datetime.now().isoformat()
+            })
+
+        duration = time.time() - start_time
+        
+        return {
+            "token": token_hash,
+            "synthesis_hash": synthesis_hash,
+            "result": final_synthesis,
+            "duration_sec": round(duration, 2),
+            "agents_used": len(results)
+        }
+
+    def rapport(self):
+        return {
+            "tokens_actifs": len(self.active_tokens),
+            "memoire_totale": len(self.memory)
+        }
+
+# ───────────────────────────────────────────────────────────────────────────────
+# EXÉCUTION CONTINUE — TERRA.SKILL
+# ───────────────────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    print("🔥 NEXUS OMEGA — SWARM INTELLIGENCE ACTIVE\n")
+    
+    engine = SwarmGeniusOmega()
+    
+    # Lancement de la résonance
+    result = engine.execute_resonance(
+        utilisateur="Aissa",
+        contexte="construction_systeme",
+        prompt="Comment optimiser un algorithme de routage pour un réseau distribué sous contrainte de latence ?"
+    )
+    
+    print("\n═══════════════════════════════════════════════════════════════")
+    print(result["result"])
+    print("═══════════════════════════════════════════════════════════════")
+    print(f"\n🔒 Scellé cryptographiquement : {result['synthesis_hash']}")
+    print(f"⏱️  Temps de résonance : {result['duration_sec']} secondes")
+    print(f"📊 Rapport : {engine.rapport()}")
