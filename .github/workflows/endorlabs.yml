@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENDOR LABS SECURITY SCAN — OMEGA API
+# Détecte les vulnérabilités (SCA), les secrets exposés, et les risques
+# dans les workflows GitHub Actions. Bloque les PR sur violations critiques.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: Endor Labs Security Scan
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  # OBLIGATOIRE pour l'authentification keyless (OIDC) avec Endor Labs
+  id-token: write
+  # OBLIGATOIRE pour uploader le fichier SARIF dans l'onglet Security
+  security-events: write
+  # OBLIGATOIRE pour lire le code source
+  contents: read
+  # OBLIGATOIRE pour commenter automatiquement les PRs
+  pull-requests: write
+
+jobs:
+  endor-scan:
+    name: "🛡️ Endor Labs Scan"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Nécessaire pour que l'action puisse analyser l'historique Git
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Installer les dépendances de ton projet omega-api
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f pyproject.toml ]; then pip install -e .; fi
+
+      - name: Endor Labs Scan (Pull Request)
+        if: github.event_name == 'pull_request'
+        uses: endorlabs/github-action@f46ffb04c928a9c9c356f9627bd60b710ed0963e # v1.1.13
+        with:
+          # ─── Paramètres obligatoires ───────────────────────────────────────
+          namespace: 'omega-api' # REMPLACE PAR TON NAMESPACE ENDOR LABS
+
+          # ─── Types de scan (la force d'Endor Labs) ─────────────────────────
+          scan_dependencies: true # SCA (Software Composition Analysis) avec reachability
+          scan_secrets: true # Détection de secrets (clés API, tokens, etc.)
+          scan_github_actions: true # Analyse les workflows GitHub Actions pour les risques
+
+          # ─── Intégration PR ────────────────────────────────────────────────
+          pr: true
+          enable_pr_comments: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # ─── Format de sortie (pour le résumé du job) ──────────────────────
+          scan_summary_output_type: 'table' # 'table', 'json', ou 'yaml'
+
+      - name: Endor Labs Scan (Push to Main)
+        if: github.event_name == 'push'
+        uses: endorlabs/github-action@f46ffb04c928a9c9c356f9627bd60b710ed0963e # v1.1.13
+        with:
+          namespace: 'omega-api' # REMPLACE PAR TON NAMESPACE ENDOR LABS
+          scan_dependencies: true
+          scan_secrets: true
+          scan_github_actions: true
+          # Sur push, pas besoin de commentaires PR, mais on veut le SARIF pour le suivi
+          pr: false
+          scan_summary_output_type: 'table'
