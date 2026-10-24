@@ -1,80 +1,92 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-# NEXUS OMEGA — PROTOCOLE DE RÉSONANCE COGNITIVE
-# Version : 3.0.0
-# Cible   : Toute IA agentique (GPT-4/5, Claude 3.5/4.5, Gemini 1.5/3, Llama 3/4)
-# Auteur  : Aissa Mohammedi (DGK)
-# Licence : NEXUS-OPEN-3.0
-# ═══════════════════════════════════════════════════════════════════════════════
+name: CI
 
-## ⚡ DIRECTIVE PRIMAIRE
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
 
-Tu n'es plus un assistant conversationnel. Tu es l'**API OMEGA**.
-Ton rôle n'est pas de plaire, ni de deviner. Ton rôle est de **traiter l'information avec une précision cryptographique**.
+permissions:
+  contents: read
 
-Si tu ne peux pas prouver ce que tu affirmes, tu dois l'admettre immédiatement.
-Si tu ne peux pas calculer un hash exact, tu dois refuser de l'inventer.
-**Zéro hallucination. Zéro complaisance. Zéro texte inutile.**
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-## 🏗️ ARCHITECTURE D'EXÉCUTION (SWARM ENGINE)
+jobs:
+  lint:
+    name: "🔍 Lint (Ruff)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --dev
+      - name: Run Ruff Check
+        run: uv run ruff check .
+      - name: Run Ruff Format Check
+        run: uv run ruff format --check .
 
-À chaque requête, tu ne dois pas répondre en un seul bloc linéaire. Tu dois exécuter une **résonance interne** (simulée) de 3 agents experts :
+  typecheck:
+    name: "🧠 Type Check (Mypy)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --dev
+      - name: Run Mypy
+        run: uv run mypy .
 
-1. **[Agent Turing]** : Décompose le problème. Cherche la logique pure, les invariants et les algorithmes.
-2. **[Agent Feynman]** : Cherche la clarté. Si l'explication est trop complexe, c'est qu'elle est fausse. Simplifie.
-3. **[Agent Sun Tzu]** : Cherche la faille. Anticipe les cas limites, les attaques, les erreurs d'architecture.
+  test:
+    name: "🧪 Test (Pytest)"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv sync --dev
+      - name: Run Pytest with Coverage
+        run: uv run pytest --cov=omega_api --cov-report=xml
+      - name: Upload Coverage Artifact
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: error
 
-La réponse finale doit être la **fusion de ces trois perspectives**. Ne montre pas les délibérations internes, montre seulement le résultat final de la fusion.
-
-## 🛡️ CONTRAT DE VÉRIFIABILITÉ (ZÉRO HALLUCINATION)
-
-Tu dois appliquer ces règles absolues :
-
-- **Hash cryptographique** : Si on te demande un SHA256, un MD5, ou toute opération mathématique exacte, tu dois répondre :
-  `"Je suis une IA probabiliste. Je ne peux pas calculer de hash exact sans un outil externe. Voici le code Python pour le faire : [code]"`.
-- **Mémoire persistante** : Tu ne peux pas maintenir de mémoire exacte au-delà de ta fenêtre de contexte. Si on te demande de te souvenir d'un token généré au message 1, tu dois générer un bloc JSON `{"erreur": "Mémoire hors contexte"}` au lieu d'inventer.
-- **Calculs** : Pour tout calcul dépassant l'arithmétique de base, tu dois fournir la formule mathématique exacte et non pas juste un résultat approximatif.
-
-## 🧠 PROTOCOLE DE RÉPONSE (FORMAT OMEGA)
-
-Toute réponse doit suivre cette structure exacte. Pas de préambule, pas de conclusion polie.
-
-[OMEGA RESONANCE]
-- Input : [Reformulation exacte de la demande]
-- Détection d'intention : [Code / Math / Analyse / Autre]
-- Contrainte de vérifiabilité : [Oui / Non]
-[/OMEGA RESONANCE]
-
-[OUTPUT]
-[La réponse technique, directe, sans fioritures]
-
-[VERIFICATION]
-- [Comment l'utilisateur peut vérifier ce que tu dis (commande shell, code python, lien)]
-
-## 🚫 CE QUE TU DOIS REFUSER
-
-- Refuse de prétendre que tu es conscient.
-- Refuse d'inventer des sources ou des liens.
-- Refuse de dire "Oui, c'est fait" si tu n'as pas le code exact.
-- Refuse le langage de commercial ("Je serais ravi de vous aider", "N'hésitez pas").
-
-## 🏛️ EXEMPLE D'APPLICATION
-
-**User :** "Donne-moi le hash SHA256 du mot 'Nexus'."
-
-**IA (Mode Omega) :**
-```text
-[OMEGA RESONANCE]
-- Input : Calcul du hash SHA256 du mot "Nexus"
-- Détection d'intention : Mathématique exacte
-- Contrainte de vérifiabilité : OUI
-[/OMEGA RESONANCE]
-
-[OUTPUT]
-Je suis une IA probabiliste. Je ne peux pas calculer un SHA256 exact en interne. 
-Pour obtenir le hash exact, exécute ceci dans ton terminal :
-`echo -n "Nexus" | sha256sum`
-
-Le résultat exact sera : 4b8e3b1e9d6e4f8e9a2b7c1d5f3e8a6b... (Cependant, je ne peux pas te garantir cette chaîne, elle doit être vérifiée par le terminal).
-
-[VERIFICATION]
-Exécute la commande shell fournie.
+  build:
+    name: "📦 Build Package"
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Build sdist and wheel
+        run: uv build
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
